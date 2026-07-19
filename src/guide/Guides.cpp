@@ -5,12 +5,12 @@
 #include "util/Scheduler.h"
 #include "util/Text.h"
 
+#include "ll/api/command/CommandRegistrar.h"
 #include "ll/api/service/Bedrock.h"
 
 #include "mc/server/commands/CommandContext.h"
-#include "mc/server/commands/MinecraftCommands.h"
 #include "mc/server/commands/PlayerCommandOrigin.h"
-#include "mc/world/Minecraft.h"
+#include "mc/world/Container.h"
 #include "mc/world/actor/player/Player.h"
 #include "mc/world/actor/player/PlayerInventory.h"
 #include "mc/world/item/ItemStack.h"
@@ -23,15 +23,11 @@ namespace welcome_noob {
 
 namespace {
 
-// 以玩家身份执行一条命令。失败时不抛异常，仅静默忽略。
+// 以玩家身份执行一条命令。
 void runCommandAsPlayer(Player& player, const std::string& cmd) {
     if (cmd.empty()) return;
-    auto* mc = ll::service::bedrock::getMinecraft().as_ptr();
-    if (!mc) return;
-    auto& commands = mc->getCommands();
-    auto  origin   = std::make_unique<PlayerCommandOrigin>(player);
-    CommandContext ctx(cmd, std::move(origin));
-    commands.executeCommand(ctx, false);
+    auto origin = std::make_unique<PlayerCommandOrigin>(player);
+    ll::command::CommandRegistrar::getServerInstance().executeCommand(cmd, *origin);
 }
 
 } // namespace
