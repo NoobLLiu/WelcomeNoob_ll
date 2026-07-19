@@ -31,6 +31,7 @@ LL_AUTO_INSTANCE_HOOK_IMPL(
     PlayerDisconnectHook,
     ServerPlayer,
     HookPriority::Normal,
+    ll::memory::SaveNone,
     &ServerPlayer::disconnect,
     void
 ) {
