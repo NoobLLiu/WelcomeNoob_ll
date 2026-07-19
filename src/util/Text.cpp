@@ -15,40 +15,41 @@ void sendChat(Player& p, const std::string& msg) {
 
 void sendActionbar(Player& p, const std::string& msg) {
     // 通过 SetTitlePacket::TitleType::Actionbar 实现
-    SetTitlePacketPayload payload(
+    // 使用 direct-initialization + guaranteed copy elision 避免 SetTitlePacketPayload 的拷贝构造
+    SetTitlePacket packet(SetTitlePacketPayload(
         SetTitlePacketPayload::TitleType::Actionbar,
-        msg.empty() ? "" : msg,
+        msg.empty() ? std::string{} : std::string{msg},
         std::nullopt
-    );
-    SetTitlePacket packet(std::move(payload));
+    ));
     p.sendNetworkPacket(packet);
 }
 
 void sendSubtitle(Player& p, const std::string& msg) {
     // 先发送空 Title，再发送 Subtitle（Minecraft 协议要求 Subtitle 需先有 Title）
     {
-        SetTitlePacketPayload payload(
+        SetTitlePacket packet(SetTitlePacketPayload(
             SetTitlePacketPayload::TitleType::Title,
-            "",
+            std::string{},
             std::nullopt
-        );
-        SetTitlePacket packet(std::move(payload));
+        ));
         p.sendNetworkPacket(packet);
     }
     if (!msg.empty()) {
-        SetTitlePacketPayload payload(
+        SetTitlePacket packet(SetTitlePacketPayload(
             SetTitlePacketPayload::TitleType::Subtitle,
-            msg,
+            std::string{msg},
             std::nullopt
-        );
-        SetTitlePacket packet(std::move(payload));
+        ));
         p.sendNetworkPacket(packet);
     }
 }
 
 void clearHud(Player& p) {
-    SetTitlePacketPayload payload(SetTitlePacketPayload::TitleType::Clear);
-    SetTitlePacket packet(std::move(payload));
+    SetTitlePacket packet(SetTitlePacketPayload(
+        SetTitlePacketPayload::TitleType::Clear,
+        std::string{},
+        std::nullopt
+    ));
     p.sendNetworkPacket(packet);
 }
 
