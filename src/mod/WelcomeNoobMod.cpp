@@ -30,9 +30,14 @@ bool WelcomeNoobMod::load() {
     // 加载配置
     auto configPath = dataDir / "config.json";
     if (!ConfigManager::getInstance().load(configPath.string())) {
-        logger.warn("Failed to load config from {}, using empty steps", configPath.string());
+        logger.error("Failed to load config from {}, using empty steps. Please copy config.json to this path.",
+            configPath.string());
     } else {
-        logger.info("Loaded {} steps from config", ConfigManager::getInstance().getSteps().size());
+        const auto& steps = ConfigManager::getInstance().getSteps();
+        logger.info("Loaded {} steps from config", steps.size());
+        if (steps.empty()) {
+            logger.error("config.json loaded but 'steps' is empty! Tutorial menu will show no steps.");
+        }
     }
 
     // 加载玩家数据存储

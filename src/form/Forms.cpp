@@ -92,21 +92,27 @@ void showTutorialMenu(Player& player) {
     } else if (data.status == "skipped") {
         content += "§c你跳过了教程，随时可以重新开始§r\n\n";
     }
-    for (size_t i = 0; i < steps.size(); ++i) {
-        const auto& s = steps[i];
-        const bool isCompleted = data.isStepCompleted(s.key);
-        const bool isCurrent = data.currentStep.has_value() && *data.currentStep == s.key;
-        const char* icon = isCompleted ? "§a✔" : (isCurrent ? "§e▶" : "§7○");
-        content += std::string(icon) + " " + std::to_string(i + 1) + ". " + s.title + "§r\n";
-        // 当前步骤：附加去色码描述（对应原 JS step.description.replace(/§./g, '')）
-        if (isCurrent) {
-            std::string plainDesc = s.description;
-            auto pos = plainDesc.find('§');
-            while (pos != std::string::npos && pos + 1 < plainDesc.size()) {
-                plainDesc.erase(pos, 2);
-                pos = plainDesc.find('§', pos);
+    if (steps.empty()) {
+        // config 未加载或 steps 为空：显示提示，避免 content 空白
+        content += "§c配置文件未加载或 steps 为空！\n";
+        content += "§7请联系管理员将 config.json 复制到 plugins/WelcomeNoob/ 目录\n";
+    } else {
+        for (size_t i = 0; i < steps.size(); ++i) {
+            const auto& s = steps[i];
+            const bool isCompleted = data.isStepCompleted(s.key);
+            const bool isCurrent = data.currentStep.has_value() && *data.currentStep == s.key;
+            const char* icon = isCompleted ? "§a✔" : (isCurrent ? "§e▶" : "§7○");
+            content += std::string(icon) + " " + std::to_string(i + 1) + ". " + s.title + "§r\n";
+            // 当前步骤：附加去色码描述（对应原 JS step.description.replace(/§./g, '')）
+            if (isCurrent) {
+                std::string plainDesc = s.description;
+                auto pos = plainDesc.find('§');
+                while (pos != std::string::npos && pos + 1 < plainDesc.size()) {
+                    plainDesc.erase(pos, 2);
+                    pos = plainDesc.find('§', pos);
+                }
+                content += "   §f" + plainDesc + "\n";
             }
-            content += "   §f" + plainDesc + "\n";
         }
     }
 

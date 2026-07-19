@@ -45,6 +45,17 @@ target("WelcomeNoob")
     add_headerfiles("src/**.h")
     add_files("src/**.cpp")
     add_includedirs("src")
+    -- 打包时把 config.json 复制到 bin/<ModName>/，让 CI 产物包含默认配置
+    after_build(function(target)
+        import("core.project.config")
+        local modName = target:name()
+        local bindir = path.join(os.projectdir(), "bin", modName)
+        local srcConfig = path.join(os.projectdir(), "config.json")
+        if os.isfile(srcConfig) then
+            os.cp(srcConfig, path.join(bindir, "config.json"))
+            cprint("${bright green}[WelcomeNoob]: ${reset}config.json copied to " .. bindir)
+        end
+    end)
     if is_config("target_type", "server") then
     --  add_includedirs("src-server")
     --  add_files("src-server/**.cpp")
