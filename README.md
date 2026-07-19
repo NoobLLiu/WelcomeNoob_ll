@@ -1,3 +1,17 @@
+### 注意
+本项目由AI编写。
+
+### 简介
+基于 LeviLamina 的新手引导插件，支持多步骤引导、HUD 显示、相机巡游、自定义命令检测等。
+
+### 安装
+1. 将 WelcomeNoob.dll 放入 `plugins/` 目录
+2. 将 config.json 放入 `plugins/WelcomeNoob/` 目录
+3. 重启服务器"
+
+
+--
+
 # LeviLamina Mod Template
 
 Mod Template for LeviLamina
