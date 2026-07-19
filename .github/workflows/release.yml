@@ -29,8 +29,60 @@ jobs:
       - run: |
           xmake repo -u
 
-      - run: |
-          xmake f -a x64 -m release -p windows --target_type=${{ matrix.target_type }} -y
+      - name: First xmake configure (expected to fail at libcurl)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          xmake f -a x64 -m release -p windows -v --target_type=${{ matrix.target_type }} -y
+
+      - name: Patch libssh2 cmake config stale zlib path
+        shell: pwsh
+        run: |
+          # 查找当前 zlib v1.3.2 的实际安装路径（xmake f 已安装 zlib）
+          $zlibLib = Get-ChildItem "$env:LOCALAPPDATA\.xmake\packages\z\zlib\v1.3.2\*\lib\zlib.lib" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $zlibLib) {
+            Write-Error "zlib v1.3.2 not found"; exit 1
+          }
+          $newZlibPath = $zlibLib.FullName -replace '\\','/'
+          Write-Host "Current zlib v1.3.2 path: $newZlibPath"
+
+          # 查找 libssh2 cmake config 目录下所有 .cmake 文件（路径含 hash，用通配符）
+          $cmakeDir = Get-ChildItem "$env:LOCALAPPDATA\.xmake\packages\l\libssh2\1.11.1\*\lib\cmake\libssh2" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $cmakeDir) {
+            Write-Host "libssh2 cmake dir not found, nothing to patch"
+          } else {
+            Write-Host "libssh2 cmake dir: $($cmakeDir.FullName)"
+            $cmakeFiles = Get-ChildItem -Path $cmakeDir.FullName -Filter "*.cmake" -Recurse
+            $patchedAny = $false
+            foreach ($cfg in $cmakeFiles) {
+              $content = Get-Content $cfg.FullName -Raw
+              # 调试：打印包含 v1.3.1 的行
+              $v131Lines = $content -split "`n" | Where-Object { $_ -match "v1\.3\.1" }
+              if ($v131Lines) {
+                Write-Host "--- v1.3.1 refs in $($cfg.Name) ---"
+                $v131Lines | ForEach-Object { Write-Host "  $_" }
+              }
+              # 替换所有 zlib v1.3.1 的路径引用为当前 v1.3.2 实际路径
+              $patched = $content -replace '[A-Za-z]:[/\\][^"]*zlib[/\\]v1\.3\.1[/\\][^"/\\]+[/\\]lib[/\\]zlib\.lib', $newZlibPath
+              if ($patched -ne $content) {
+                Set-Content -Path $cfg.FullName -Value $patched -NoNewline
+                Write-Host "Patched $($cfg.Name) -> zlib path: $newZlibPath"
+                $patchedAny = $true
+              }
+            }
+            if (-not $patchedAny) {
+              Write-Host "WARNING: No zlib v1.3.1 path replaced. Dumping all cmake files for debugging:"
+              foreach ($cfg in $cmakeFiles) {
+                Write-Host "===== $($cfg.Name) ====="
+                Get-Content $cfg.FullName | ForEach-Object { Write-Host $_ }
+              }
+            }
+          }
+
+      - name: Retry xmake configure after patch
+        shell: pwsh
+        run: |
+          xmake f -a x64 -m release -p windows -v --target_type=${{ matrix.target_type }} -y
 
       - run: |
           xmake -w -y

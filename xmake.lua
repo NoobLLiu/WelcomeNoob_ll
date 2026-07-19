@@ -8,18 +8,15 @@ option("target_type")
     set_values("server", "client")
 option_end()
 
--- add_requires("levilamina x.x.x") for a specific version
--- add_requires("levilamina develop") to use develop version
--- please note that you should add bdslibrary yourself if using dev version
-add_requires("levilamina", {configs = {target_type = get_config("target_type")}})
-
+add_requires("levilamina 26.10.14", {configs = {target_type = get_config("target_type")}})
 add_requires("levibuildscript")
+add_requires("nlohmann_json", {configs = {shared = false}})
 
 if not has_config("vs_runtime") then
     set_runtimes("MD")
 end
 
-target("my-mod") -- Change this to your mod name.
+target("WelcomeNoob")
     add_rules("@levibuildscript/linkrule")
     add_rules("@levibuildscript/modpacker")
     if is_plat("windows") then
@@ -39,9 +36,9 @@ target("my-mod") -- Change this to your mod name.
             "-Wno-pragma-system-header-outside-header",
             {tools = {"clang_cl"}}
         )
-        set_toolchains("clang-cl")
+        set_toolchains("msvc")
     end
-    add_packages("levilamina")
+    add_packages("levilamina", "nlohmann_json")
     set_kind("shared")
     set_languages("c++20")
     set_symbols("debug")

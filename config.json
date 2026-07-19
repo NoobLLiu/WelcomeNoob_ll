@@ -1,0 +1,115 @@
+{
+  "steps": [
+    {
+      "key": "teleport_system",
+      "type": "cmd_detect",
+      "title": "传送系统",
+      "description": "\ue013\ue027§e如果你要快速开始你的野外生存，从如此大的主城区跑出去是相当麻烦的。使用钟点击地面或在聊天栏输入/menu打开菜单。在菜单中选择§a传送系统>>>随机传送§e，或者直接在聊天栏输入/tpr，以传送到随机位置快速开始。",
+      "hint": "在聊天栏输入 /tpr 完成传送",
+      "subtitle": "传送系统",
+      "actionbar": "§e输入 /tpr 传送到随机位置开始生存",
+      "config": {
+        "commands": ["tpr"],
+        "successMessage": "§a[新手教程] §f很好！你已经学会了使用随机传送！"
+      }
+    },
+    {
+      "key": "collect_iron",
+      "type": "manual_submit",
+      "title": "获取资源",
+      "description": "\ue013\ue027§e传送系统同时还提供一些地标性景点与玩家之间的免费传送，是时候开始你的游戏了。在游玩初期你可以直接当作原版生存来玩,接下来按照游玩的正常顺序获取一些物资吧",
+      "hint": "收集8个铁锭后，打开 /noob 菜单点击提交",
+      "subtitle": "获取资源",
+      "actionbar": "§e收集8个铁锭，完成后在 /noob 菜单提交",
+      "config": {
+        "submitButton": "§e提交：我有8个铁锭",
+        "successMessage": "§a[新手教程] §f很好！你已完成了获取资源的步骤！"
+      }
+    },
+    {
+      "key": "shop_sell",
+      "type": "external_report",
+      "title": "商店回收",
+      "description": "\ue013\ue027§e你已经获得了不少资源，你可以在§a 菜单>>经济交易>>商店系统>>官方商店>>回收§e 中回收资源以换取货币（暮源）。多回收一些物资换取更多暮源，后面圈地会用到哦。",
+      "hint": "由其他插件上报完成",
+      "subtitle": "商店回收",
+      "actionbar": "§e前往 菜单>>经济交易>>商店系统>>官方商店>>回收 换取更多暮源",
+      "config": {
+        "successMessage": "§a[新手教程] §f你已完成「商店回收」步骤！"
+      }
+    },
+    {
+      "key": "land_claim",
+      "type": "external_report",
+      "title": "圈地系统",
+      "description": "\ue013\ue027§e你成功换取了你的启动基金。§a暮源(货币)§e可以用于在商店购买物品或者划分领地。",
+      "hint": "由其他插件上报完成",
+      "subtitle": "圈地系统",
+      "actionbar": "§e使用暮源货币划分你的领地",
+      "config": {
+        "successMessage": "§a[新手教程] §f你已完成「圈地系统」步骤！"
+      }
+    },
+    {
+      "key": "city_tour",
+      "type": "camera_tour",
+      "title": "主城导览",
+      "description": "\ue013\ue027§e你已完成新手教程内容，并大致了解了服务器主要的玩法。但服务器还有许多分支内容供你体验。让我们回到游戏开始的地方-§a主城",
+      "hint": "完成主城导览后自动完成",
+      "subtitle": "主城导览",
+      "actionbar": "§e正在播放主城导览...",
+      "config": {
+        "startCommands": [
+          "playsound random.orb \"${name}\"",
+          "effect \"${name}\" regeneration 35 35"
+        ],
+        "scenes": [
+          {
+            "delay": 3000,
+            "camera": [
+              "camera \"${name}\" set minecraft:free ease 0 in_circ pos -220 75 236 rot 15 90",
+              "camera \"${name}\" set minecraft:free ease 10 linear pos -220 75 228 rot 15 90"
+            ],
+            "message": "\ue013\ue027§a主城§e是新玩家的出生点和向导所在地，你可以在这里接收邮件或委托任务",
+            "messageDelay": 200
+          },
+          {
+            "delay": 12000,
+            "camera": [
+              "camera \"${name}\" set minecraft:free ease 0 in_circ pos -207 75 251 rot 15 -15",
+              "camera \"${name}\" set minecraft:free ease 10 linear pos -212 75 251 rot 15 -15"
+            ],
+            "message": "\ue013\ue027§a活动中心§e是服务器活动推出与参与的场所，在没有活动时，这里将暂时关闭",
+            "messageDelay": 200
+          },
+          {
+            "delay": 12000,
+            "camera": [
+              "camera \"${name}\" set minecraft:free ease 0 in_circ pos -211 75 212 rot 15 195",
+              "camera \"${name}\" set minecraft:free ease 10 linear pos -207 75 212 rot 15 195"
+            ],
+            "message": "\ue013\ue027§a游戏中心§e是一些常驻休闲小游戏的参与地点，通常还能在这里获得不少奖励",
+            "messageDelay": 200
+          },
+          {
+            "delay": 12000,
+            "camera": [
+              "camera \"${name}\" set minecraft:free ease 0 in_circ pos -237 74 232 rot 0 -90",
+              "camera \"${name}\" set minecraft:free ease 20 linear pos -233 74 232 rot 0 -90"
+            ],
+            "message": "\ue013\ue027§e对了，这是你的新手教程奖励，也可以算是你真正的启动基金",
+            "messageDelay": 200
+          }
+        ],
+        "endCommands": [
+          "camera \"${name}\" clear",
+          "playsound random.levelup \"${name}\"",
+          "give \"${name}\" pa:zuanshimoney 1"
+        ],
+        "completeHeader": "§a§l================================================",
+        "completeMessage": "§a§l  恭喜你完成了所有新手教程！",
+        "completeFooter": "§f你现在可以自由探索服务器了，祝你游玩愉快！"
+      }
+    }
+  ]
+}
