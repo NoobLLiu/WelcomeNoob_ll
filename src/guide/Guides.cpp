@@ -12,6 +12,7 @@
 #include "mc/server/commands/PlayerCommandOrigin.h"
 #include "mc/world/Container.h"
 #include "mc/world/actor/player/Player.h"
+#include "mc/world/actor/player/Inventory.h"
 #include "mc/world/actor/player/PlayerInventory.h"
 #include "mc/world/item/ItemStack.h"
 #include "mc/world/level/Level.h"
