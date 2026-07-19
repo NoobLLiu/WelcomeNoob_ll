@@ -55,7 +55,7 @@ void ManualSubmitGuide::start(Player& player, const StepConfig& /*step*/) {
 bool ManualSubmitGuide::checkIronIngot(Player& player, int required) {
     auto& inventory = player.getInventory();
     int   count     = inventory.getItemCount([](ItemStack const& item) {
-        return item.isValid() && item.getName() == "minecraft:iron_ingot";
+        return !item.isNull() && item.getName() == "minecraft:iron_ingot";
     });
     return count >= required;
 }
