@@ -11,6 +11,7 @@
 #include "ll/api/event/EventBus.h"
 #include "ll/api/event/Listener.h"
 #include "ll/api/event/player/PlayerConnectEvent.h"
+#include "ll/api/memory/Hook.h"
 #include "ll/api/service/Bedrock.h"
 
 #include "mc/server/ServerPlayer.h"
@@ -26,10 +27,10 @@ namespace welcome_noob {
 static std::vector<std::shared_ptr<ll::event::ListenerBase>> gListeners;
 
 // Hook: ServerPlayer::disconnect —— 替代 PlayerDisconnectEvent
-LL_AUTO_TYPE_INSTANCE_HOOK(
+LL_AUTO_INSTANCE_HOOK_IMPL(
     PlayerDisconnectHook,
-    ll::memory::HookPriority::Normal,
     ServerPlayer,
+    HookPriority::Normal,
     &ServerPlayer::disconnect,
     void
 ) {
