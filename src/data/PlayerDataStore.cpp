@@ -35,7 +35,7 @@ void PlayerDataStore::save() {
 }
 
 PlayerData PlayerDataStore::get(const std::string& xuid) const {
-    if (xuid.empty() || !mData.contains(xuid)) {
+    if (xuid.empty() || !mData.is_object() || !mData.contains(xuid)) {
         return PlayerData::getDefault();
     }
     try {
@@ -46,7 +46,12 @@ PlayerData PlayerDataStore::get(const std::string& xuid) const {
 }
 
 void PlayerDataStore::set(const std::string& xuid, const PlayerData& data) {
-    mData[xuid] = data;
+    // 确保 mData 是 object，避免 null json 上用 operator[] 的未定义行为
+    if (!mData.is_object()) mData = nlohmann::json::object();
+    // 显式构造 json 后移动赋值，避免 mData[xuid] = data 的复杂隐式转换链
+    nlohmann::json j;
+    to_json(j, data);
+    mData[xuid] = std::move(j);
     save();
 }
 

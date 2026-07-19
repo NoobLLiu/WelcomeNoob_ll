@@ -30,9 +30,13 @@ void from_json(const nlohmann::json& j, PlayerData& p) {
 }
 
 void to_json(nlohmann::json& j, const PlayerData& p) {
+    // 显式构造 currentStep 的 json 值，避免三元表达式类型歧义导致的潜在 UB
+    nlohmann::json stepJson = p.currentStep.has_value()
+        ? nlohmann::json(*p.currentStep)
+        : nlohmann::json(nullptr);
     j = nlohmann::json{
         {"status", p.status},
-        {"currentStep", p.currentStep ? *p.currentStep : nullptr},
+        {"currentStep", std::move(stepJson)},
         {"completedSteps", p.completedSteps},
         {"joinCount", p.joinCount}
     };

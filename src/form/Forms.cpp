@@ -27,7 +27,7 @@ namespace welcome_noob::Forms {
 void showWelcomeForm(Player& player) {
     const std::string xuid = player.getXuid();
 
-    ll::form::SimpleForm form("§e§l欢迎来到服务器", "§f是否开始新手教程？");
+    ll::form::SimpleForm form("§e§l欢迎来到服务器!", "§f检测到你是第一次进入服务器。\n是否需要开始新手教程来了解服务器玩法？");
     form.appendButton("§a开始教程");
     form.appendButton("§c跳过教程");
 
@@ -98,22 +98,33 @@ void showTutorialMenu(Player& player) {
         const bool isCurrent = data.currentStep.has_value() && *data.currentStep == s.key;
         const char* icon = isCompleted ? "§a✔" : (isCurrent ? "§e▶" : "§7○");
         content += std::string(icon) + " " + std::to_string(i + 1) + ". " + s.title + "§r\n";
+        // 当前步骤：附加去色码描述（对应原 JS step.description.replace(/§./g, '')）
+        if (isCurrent) {
+            std::string plainDesc = s.description;
+            auto pos = plainDesc.find('§');
+            while (pos != std::string::npos && pos + 1 < plainDesc.size()) {
+                plainDesc.erase(pos, 2);
+                pos = plainDesc.find('§', pos);
+            }
+            content += "   §f" + plainDesc + "\n";
+        }
     }
 
     ll::form::SimpleForm form("§e§l新手教程");
     form.setContent(content);
 
     // 动态构建按钮列表，buttonActions[i] 对应按钮 i 的动作字符串
+    // 严格对照原 LSE WelcomeNoob.js L403-438 的按钮顺序
     std::vector<std::string> buttonActions;
 
     if (data.status == "in_progress") {
-        // 继续当前步骤（仅当存在 currentStep）
+        // 1. 继续当前步骤（仅当存在 currentStep）
         if (data.currentStep.has_value()) {
             form.appendButton("§a继续当前步骤");
             buttonActions.push_back("continue");
         }
 
-        // manual_submit 类型步骤的提交按钮
+        // 2. manual_submit 类型步骤的提交按钮
         const StepConfig* currentStep = nullptr;
         if (data.currentStep.has_value()) {
             currentStep = ConfigManager::getInstance().getStep(*data.currentStep);
@@ -123,28 +134,28 @@ void showTutorialMenu(Player& player) {
             buttonActions.push_back("submit_manual");
         }
 
-        // 跳过教程
-        form.appendButton("§c跳过教程");
-        buttonActions.push_back("skip");
-
-        // OP 专用：强制完成当前步骤
+        // 3. OP 专用：强制完成当前步骤（颜色 §c，与原 LSE 一致）
         if (isOp) {
-            form.appendButton("§6[OP] 完成当前步骤");
+            form.appendButton("§c[OP] 完成当前步骤");
             buttonActions.push_back("op_complete_step");
         }
+        // ★ in_progress 状态没有 skip 按钮（原 LSE 行为）
     } else if (data.status == "not_started") {
         form.appendButton("§a开始教程");
         buttonActions.push_back("restart");
         form.appendButton("§c跳过教程");
         buttonActions.push_back("skip");
     } else {
-        // completed 或 skipped：重新开始（OP 与普通玩家合并为同一按钮）
-        form.appendButton("§a重新开始教程");
-        buttonActions.push_back("restart");
+        // completed 或 skipped：仅 OP 可重新开始
+        if (isOp) {
+            form.appendButton("§c[OP] 重新开始教程");
+            buttonActions.push_back("restart");
+        }
+        // ★ 非OP没有任何操作按钮（只有关闭）
     }
 
-    // 始终：关闭
-    form.appendButton("§7关闭");
+    // 始终：关闭（颜色 §c，与原 LSE 一致）
+    form.appendButton("§c关闭");
     buttonActions.push_back("close");
 
     form.sendTo(player, [buttonActions, xuid](Player& p, int selected, ll::form::FormCancelReason) {
@@ -180,9 +191,42 @@ void showTutorialMenu(Player& player) {
                 StepGuide::onStepComplete(p, *data.currentStep);
             }
         } else if (action == "restart") {
-            PlayerDataStore::getInstance().resetPlayer(xuid);
+            // 严格对照原 LSE WelcomeNoob.js L496-508 case 'restart'：
+            // 找第一个未完成的步骤从那里开始；若全完成则清空 completedSteps 从头开始
+            const auto& stepsRef = ConfigManager::getInstance().getSteps();
+            if (stepsRef.empty()) {
+                Text::sendChat(p, "§c配置中没有步骤");
+                return;
+            }
+            bool allCompleted = true;
+            for (const auto& s : stepsRef) {
+                if (!data.isStepCompleted(s.key)) {
+                    allCompleted = false;
+                    break;
+                }
+            }
+            data.status = "in_progress";
+            if (allCompleted) {
+                data.completedSteps.clear();
+                data.currentStep = stepsRef.front().key;
+            } else {
+                for (const auto& s : stepsRef) {
+                    if (!data.isStepCompleted(s.key)) {
+                        data.currentStep = s.key;
+                        break;
+                    }
+                }
+            }
+            PlayerDataStore::getInstance().set(xuid, data);
             StepGuide::updateNoobTag(p);
-            showWelcomeForm(p);
+            Text::sendChat(p, "§a[新手教程] §f教程已重新开始！");
+            // 启动当前步骤引导（原 LSE 不弹欢迎表单，直接 startStepGuide）
+            if (data.currentStep.has_value()) {
+                const auto* step = ConfigManager::getInstance().getStep(*data.currentStep);
+                if (step != nullptr) {
+                    StepGuide::startStepGuide(p, *step);
+                }
+            }
         }
         // "close" 或未知动作：不处理
     });
