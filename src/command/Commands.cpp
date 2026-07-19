@@ -45,7 +45,7 @@ void Commands::registerAll() {
                         }
                         auto& player = *static_cast<Player*>(entity);
                         Forms::showTutorialMenu(player);
-                        output.success();
+                        output.success("已打开新手教程菜单");
                     }
                 );
 
