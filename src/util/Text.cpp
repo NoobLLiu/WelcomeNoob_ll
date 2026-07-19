@@ -2,7 +2,8 @@
 
 #include "ll/api/service/Bedrock.h"
 
-#include "mc/server/commands/CommandOrigin.h"
+#include "mc/network/packet/SetTitlePacket.h"
+#include "mc/network/packet/SetTitlePacketPayload.h"
 #include "mc/world/actor/player/Player.h"
 #include "mc/world/level/Level.h"
 
@@ -13,27 +14,42 @@ void sendChat(Player& p, const std::string& msg) {
 }
 
 void sendActionbar(Player& p, const std::string& msg) {
-    // 对应 LSE tell(msg, 4) - actionbar
-    // 通过 setTitle 实现：setTitle(text, type, ...)，type=3 为 Actionbar
-    if (msg.empty()) {
-        p.setTitle("", TitleType::Actionbar);
-    } else {
-        p.setTitle(msg, TitleType::Actionbar);
-    }
+    // 通过 SetTitlePacket::TitleType::Actionbar 实现
+    SetTitlePacketPayload payload(
+        SetTitlePacketPayload::TitleType::Actionbar,
+        msg.empty() ? "" : msg,
+        std::nullopt
+    );
+    SetTitlePacket packet(std::move(payload));
+    p.sendNetworkPacket(packet);
 }
 
 void sendSubtitle(Player& p, const std::string& msg) {
-    // 对应 LSE tell(msg, 5) - subtitle
-    // type=1 为 Subtitle，需先 setTitle 主标题为空
-    p.setTitle("", TitleType::Title);
+    // 先发送空 Title，再发送 Subtitle（Minecraft 协议要求 Subtitle 需先有 Title）
+    {
+        SetTitlePacketPayload payload(
+            SetTitlePacketPayload::TitleType::Title,
+            "",
+            std::nullopt
+        );
+        SetTitlePacket packet(std::move(payload));
+        p.sendNetworkPacket(packet);
+    }
     if (!msg.empty()) {
-        p.setTitle(msg, TitleType::Subtitle);
+        SetTitlePacketPayload payload(
+            SetTitlePacketPayload::TitleType::Subtitle,
+            msg,
+            std::nullopt
+        );
+        SetTitlePacket packet(std::move(payload));
+        p.sendNetworkPacket(packet);
     }
 }
 
 void clearHud(Player& p) {
-    p.setTitle("", TitleType::Actionbar);
-    p.setTitle("", TitleType::Subtitle);
+    SetTitlePacketPayload payload(SetTitlePacketPayload::TitleType::Clear);
+    SetTitlePacket packet(std::move(payload));
+    p.sendNetworkPacket(packet);
 }
 
 std::string replaceVars(const std::string& cmd, const std::string& playerName) {
