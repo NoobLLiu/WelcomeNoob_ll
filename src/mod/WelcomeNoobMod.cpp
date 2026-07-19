@@ -28,20 +28,20 @@ bool WelcomeNoobMod::load() {
     std::filesystem::create_directories(dataDir);
 
     // 加载配置
-    auto configPath = dataDir + "/config.json";
-    if (!ConfigManager::getInstance().load(configPath)) {
-        logger.warn("Failed to load config from {}, using empty steps", configPath);
+    auto configPath = dataDir / "config.json";
+    if (!ConfigManager::getInstance().load(configPath.string())) {
+        logger.warn("Failed to load config from {}, using empty steps", configPath.string());
     } else {
         logger.info("Loaded {} steps from config", ConfigManager::getInstance().getSteps().size());
     }
 
     // 加载玩家数据存储
-    auto playerDataPath = dataDir + "/players.json";
-    PlayerDataStore::getInstance().load(playerDataPath);
+    auto playerDataPath = dataDir / "players.json";
+    PlayerDataStore::getInstance().load(playerDataPath.string());
 
     // 加载 name_to_xuid 映射
-    auto nameMapPath = dataDir + "/name_to_xuid.json";
-    GlobalState::getInstance().loadNameMap(nameMapPath);
+    auto nameMapPath = dataDir / "name_to_xuid.json";
+    GlobalState::getInstance().loadNameMap(nameMapPath.string());
 
     // 注册事件监听
     EventListener::registerAll();
