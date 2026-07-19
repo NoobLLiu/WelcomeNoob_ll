@@ -6,6 +6,8 @@ class Player;
 
 namespace welcome_noob {
 
+struct StepConfig;
+
 // cmd_detect 类型步骤引导
 class CmdDetectGuide {
 public:

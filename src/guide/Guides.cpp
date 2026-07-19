@@ -13,7 +13,7 @@
 #include "mc/world/Minecraft.h"
 #include "mc/world/actor/player/Player.h"
 #include "mc/world/actor/player/PlayerInventory.h"
-#include "mc/world/item/registry/ItemStack.h"
+#include "mc/world/item/ItemStack.h"
 #include "mc/world/level/Level.h"
 
 #include <memory>
@@ -53,8 +53,8 @@ void ManualSubmitGuide::start(Player& player, const StepConfig& /*step*/) {
 }
 
 bool ManualSubmitGuide::checkIronIngot(Player& player, int required) {
-    auto& supplies = player.getSupplies();
-    int   count    = supplies.getItemCount([](ItemStack const& item) {
+    auto& inventory = player.getInventory();
+    int   count     = inventory.getItemCount([](ItemStack const& item) {
         return item.isValid() && item.getName() == "minecraft:iron_ingot";
     });
     return count >= required;
