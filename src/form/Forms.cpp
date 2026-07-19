@@ -97,6 +97,10 @@ void showTutorialMenu(Player& player) {
         content += "§c配置文件未加载或 steps 为空！\n";
         content += "§7请联系管理员将 config.json 复制到 plugins/WelcomeNoob/ 目录\n";
     } else {
+        // § 在 UTF-8 中是 2 字节 (C2 A7)，不能用 find('§') 搜索单字节 0xA7，
+        // 否则会错误匹配中文字符的 continuation byte 和 \uE027 等字符中的 A7 字节，
+        // 导致 erase 破坏 UTF-8 序列，引发 nlohmann::json dump 时 type_error.316
+        const std::string sectionSign = "\xc2\xa7"; // "§" 的 UTF-8 编码
         for (size_t i = 0; i < steps.size(); ++i) {
             const auto& s = steps[i];
             const bool isCompleted = data.isStepCompleted(s.key);
@@ -106,10 +110,11 @@ void showTutorialMenu(Player& player) {
             // 当前步骤：附加去色码描述（对应原 JS step.description.replace(/§./g, '')）
             if (isCurrent) {
                 std::string plainDesc = s.description;
-                auto pos = plainDesc.find('§');
-                while (pos != std::string::npos && pos + 1 < plainDesc.size()) {
-                    plainDesc.erase(pos, 2);
-                    pos = plainDesc.find('§', pos);
+                // 正确删除 § + 颜色码字符：§ 是 2 字节 (C2 A7)，后面跟 1 字节颜色码，共删除 3 字节
+                auto pos = plainDesc.find(sectionSign);
+                while (pos != std::string::npos && pos + sectionSign.size() < plainDesc.size()) {
+                    plainDesc.erase(pos, sectionSign.size() + 1); // 删除 "§"(2字节) + 颜色码(1字节)
+                    pos = plainDesc.find(sectionSign, pos);
                 }
                 content += "   §f" + plainDesc + "\n";
             }
