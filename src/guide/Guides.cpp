@@ -27,7 +27,10 @@ namespace {
 // 以玩家身份执行一条命令。
 void runCommandAsPlayer(Player& player, const std::string& cmd) {
     if (cmd.empty()) return;
-    auto origin = std::make_unique<PlayerCommandOrigin>(player);
+    auto origin = std::make_unique<PlayerCommandOrigin>(
+        player.getLevel(),
+        player.getOrCreateUniqueID()
+    );
     ll::command::CommandRegistrar::getServerInstance().executeCommand(cmd, *origin);
 }
 
