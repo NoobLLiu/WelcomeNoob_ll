@@ -72,7 +72,7 @@ void ExternalReportGuide::start(Player& player, const StepConfig& /*step*/) {
 // ============================================================
 void CameraTourGuide::start(Player& player, const StepConfig& step) {
     const std::string xuid = player.getXuid();
-    const std::string name = player.getName();
+    const std::string name = player.getRealName();
     if (xuid.empty()) return;
 
     // 1. 立即执行 startCommands

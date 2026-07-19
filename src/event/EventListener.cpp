@@ -56,7 +56,7 @@ void EventListener::registerAll() {
                 if (xuid.empty()) return;
 
                 // 更新 name -> xuid 映射
-                GlobalState::getInstance().setNameXuid(player.getName(), xuid);
+                GlobalState::getInstance().setNameXuid(player.getRealName(), xuid);
 
                 // 更新加入次数
                 auto data = PlayerDataStore::getInstance().get(xuid);
