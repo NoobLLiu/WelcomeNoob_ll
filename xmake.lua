@@ -20,7 +20,7 @@ target("WelcomeNoob")
     add_rules("@levibuildscript/linkrule")
     add_rules("@levibuildscript/modpacker")
     if is_plat("windows") then
-        add_defines("NOMINMAX", "UNICODE")
+        add_defines("NOMINMAX", "UNICODE", "WELCOMENOOB_EXPORT")
         set_exceptions("none") -- To avoid conflicts with /EHa.
         add_cxflags( "/EHa", "/utf-8", "/W4", "/w44265", "/w44289", "/w44296", "/w45263", "/w44738", "/w45204")
         add_cxflags(
