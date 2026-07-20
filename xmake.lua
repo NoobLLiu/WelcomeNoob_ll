@@ -55,6 +55,12 @@ target("WelcomeNoob")
             os.cp(srcConfig, path.join(bindir, "config.json"))
             cprint("${bright green}[WelcomeNoob]: ${reset}config.json copied to " .. bindir)
         end
+        -- 复制 import library (.lib) 到 bin/ 目录，供桥接插件链接
+        local libfile = path.join(config.buildir(), "windows", "x64", config.mode(), modName .. ".lib")
+        if os.isfile(libfile) then
+            os.cp(libfile, path.join(bindir, modName .. ".lib"))
+            cprint("${bright green}[WelcomeNoob]: ${reset}" .. modName .. ".lib copied to " .. bindir)
+        end
     end)
     if is_config("target_type", "server") then
     --  add_includedirs("src-server")
