@@ -55,7 +55,9 @@ void ManualSubmitGuide::start(Player& player, const StepConfig& /*step*/) {
 bool ManualSubmitGuide::checkIronIngot(Player& player, int required) {
     auto& inventory = player.getInventory();
     int   count     = inventory.getItemCount([](ItemStack const& item) {
-        return !item.isNull() && item.getName() == "minecraft:iron_ingot";
+        // 注意：getName() 返回的是显示名（"铁锭"），不是命名空间 ID
+        // 必须用 getTypeName() 才能拿到 "minecraft:iron_ingot"
+        return !item.isNull() && item.getTypeName() == "minecraft:iron_ingot";
     });
     return count >= required;
 }
