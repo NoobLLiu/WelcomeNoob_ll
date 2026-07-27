@@ -109,7 +109,8 @@ void EventListener::registerAll() {
         std::function<void(ll::event::command::ExecutingCommandEvent&)>(
             [](ll::event::command::ExecutingCommandEvent& ev) {
                 // 1. 取命令发送者，仅处理玩家执行的命令
-                auto* entity = ev.commandContext().getOrigin().getEntity();
+                auto& ctx = ev.commandContext();
+                auto* entity = ctx.mOrigin.getEntity();
                 if (!entity || !entity->isPlayer()) return;
                 auto& player = *static_cast<Player*>(entity);
 
@@ -126,7 +127,7 @@ void EventListener::registerAll() {
                 if (!step || step->type != "cmd_detect") return;
 
                 // 4. 取命令字符串，去除前导 '/'，转小写
-                std::string cmd = ev.commandContext().getCommand();
+                std::string cmd = ctx.mCommand;
                 if (!cmd.empty() && cmd[0] == '/') cmd = cmd.substr(1);
                 // 转小写
                 std::string cmdLower = cmd;
