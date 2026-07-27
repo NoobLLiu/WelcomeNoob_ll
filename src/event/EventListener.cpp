@@ -1,6 +1,7 @@
 #include "event/EventListener.h"
 
 #include "config/ConfigManager.h"
+#include "config/StepConfig.h"
 #include "data/PlayerDataStore.h"
 #include "form/Forms.h"
 #include "guide/StepGuide.h"
@@ -10,13 +11,18 @@
 
 #include "ll/api/event/EventBus.h"
 #include "ll/api/event/Listener.h"
+#include "ll/api/event/command/ExecutingCommandEvent.h"
 #include "ll/api/event/player/PlayerConnectEvent.h"
 #include "ll/api/memory/Hook.h"
 #include "ll/api/service/Bedrock.h"
 
 #include "mc/server/ServerPlayer.h"
+#include "mc/server/commands/CommandContext.h"
+#include "mc/world/actor/player/Player.h"
 #include "mc/world/level/Level.h"
 
+#include <algorithm>
+#include <cctype>
 #include <memory>
 #include <string>
 #include <vector>
@@ -91,6 +97,64 @@ void EventListener::registerAll() {
     );
     if (connectListener) {
         gListeners.push_back(std::move(connectListener));
+    }
+
+    // ============================================================
+    // 2. ExecutingCommandEvent -- 命令执行（cmd_detect 类型步骤检测）
+    //    对应原 LSE: mc.listen('onPlayerCmd', (player, cmd) => {...})
+    //    监听所有命令执行，检查是否匹配玩家当前 cmd_detect 步骤的 commands 列表
+    // ============================================================
+    auto cmdListener = ll::event::EventBus::getInstance().emplaceListener<
+        ll::event::command::ExecutingCommandEvent>(
+        std::function<void(ll::event::command::ExecutingCommandEvent&)>(
+            [](ll::event::command::ExecutingCommandEvent& ev) {
+                // 1. 取命令发送者，仅处理玩家执行的命令
+                auto* entity = ev.context().getOrigin().getEntity();
+                if (!entity || !entity->isPlayer()) return;
+                auto& player = *static_cast<Player*>(entity);
+
+                std::string xuid = player.getXuid();
+                if (xuid.empty()) return;
+
+                // 2. 玩家必须在教程进行中
+                auto data = PlayerDataStore::getInstance().get(xuid);
+                if (data.status != "in_progress") return;
+                if (!data.currentStep.has_value()) return;
+
+                // 3. 当前步骤必须是 cmd_detect 类型
+                const auto* step = ConfigManager::getInstance().getStep(*data.currentStep);
+                if (!step || step->type != "cmd_detect") return;
+
+                // 4. 取命令字符串，去除前导 '/'，转小写
+                std::string cmd = ev.context().getCommand();
+                if (!cmd.empty() && cmd[0] == '/') cmd = cmd.substr(1);
+                // 转小写
+                std::string cmdLower = cmd;
+                std::transform(cmdLower.begin(), cmdLower.end(), cmdLower.begin(),
+                    [](unsigned char c) { return std::tolower(c); });
+
+                // 5. 与步骤配置的 commands 列表比对
+                //    匹配规则（与原 LSE 一致）：完全匹配 或 以 target + ' ' 开头
+                auto targetCmds = step->getCommands();
+                for (const auto& target : targetCmds) {
+                    std::string targetLower = target;
+                    std::transform(targetLower.begin(), targetLower.end(), targetLower.begin(),
+                        [](unsigned char c) { return std::tolower(c); });
+
+                    if (cmdLower == targetLower ||
+                        cmdLower.compare(0, targetLower.size() + 1, targetLower + " ") == 0) {
+                        // 匹配成功：触发步骤完成（不取消命令）
+                        StepGuide::onStepComplete(player, step->key);
+                        return;
+                    }
+                }
+            }
+        ),
+        ll::event::EventPriority::Normal,
+        ll::mod::NativeMod::current()
+    );
+    if (cmdListener) {
+        gListeners.push_back(std::move(cmdListener));
     }
 }
 
