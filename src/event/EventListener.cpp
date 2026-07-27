@@ -18,6 +18,7 @@
 
 #include "mc/server/ServerPlayer.h"
 #include "mc/server/commands/CommandContext.h"
+#include "mc/server/commands/CommandOrigin.h"
 #include "mc/world/actor/player/Player.h"
 #include "mc/world/level/Level.h"
 
