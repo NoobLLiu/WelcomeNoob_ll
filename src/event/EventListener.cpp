@@ -110,7 +110,7 @@ void EventListener::registerAll() {
             [](ll::event::command::ExecutingCommandEvent& ev) {
                 // 1. 取命令发送者，仅处理玩家执行的命令
                 auto& ctx = ev.commandContext();
-                auto* entity = ctx.mOrigin.getEntity();
+                auto* entity = ctx.mOrigin->getEntity();
                 if (!entity || !entity->isPlayer()) return;
                 auto& player = *static_cast<Player*>(entity);
 
