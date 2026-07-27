@@ -105,9 +105,9 @@ void EventListener::registerAll() {
     //    监听所有命令执行，检查是否匹配玩家当前 cmd_detect 步骤的 commands 列表
     // ============================================================
     auto cmdListener = ll::event::EventBus::getInstance().emplaceListener<
-        ll::event::inline command::ExecutingCommandEvent>(
-        std::function<void(ll::event::inline command::ExecutingCommandEvent&)>(
-            [](ll::event::inline command::ExecutingCommandEvent& ev) {
+        ll::event::command::ExecutingCommandEvent>(
+        std::function<void(ll::event::command::ExecutingCommandEvent&)>(
+            [](ll::event::command::ExecutingCommandEvent& ev) {
                 // 1. 取命令发送者，仅处理玩家执行的命令
                 auto* entity = ev.commandContext().getOrigin().getEntity();
                 if (!entity || !entity->isPlayer()) return;
