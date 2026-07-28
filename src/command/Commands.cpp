@@ -1,9 +1,11 @@
 #include "command/Commands.h"
 
 #include "config/ConfigManager.h"
+#include "data/PlayerData.h"
 #include "data/PlayerDataStore.h"
 #include "form/Forms.h"
 #include "guide/StepGuide.h"
+#include "hud/HudManager.h"
 #include "state/GlobalState.h"
 #include "util/Scheduler.h"
 #include "util/Text.h"
@@ -15,9 +17,11 @@
 #include "ll/api/event/command/ServerCommandRegisterEvent.h"
 #include "ll/api/service/Bedrock.h"
 
+#include "mc/server/commands/CommandOriginType.h"
 #include "mc/world/actor/player/Player.h"
 #include "mc/world/level/Level.h"
 
+#include <sstream>
 #include <string>
 
 namespace welcome_noob {
@@ -208,6 +212,147 @@ void Commands::registerAll() {
                             }
                             StepGuide::onStepComplete(*player, params.stepKey);
                             output.success("已上报步骤完成: " + params.stepKey);
+                        });
+                }
+
+                // ============================================
+                // 命令 3：/wn —— 控制台专用指令（供 LSE 插件对接）
+                // ============================================
+                auto& wnCmd = ll::command::CommandRegistrar::getServerInstance()
+                                  .getOrCreateCommand(
+                                      "wn",
+                                      "WelcomeNoob 控制台指令：query/report/reset",
+                                      CommandPermissionLevel::Any
+                                  );
+
+                // --- /wn query <玩家名> ---
+                {
+                    struct WnQueryParams {
+                        std::string playerName;
+                    };
+                    wnCmd.overload<WnQueryParams>()
+                        .text("query")
+                        .required("playerName")
+                        .execute([](CommandOrigin const& origin, CommandOutput& output,
+                                    WnQueryParams const& params) {
+                            if (origin.getOriginType() != CommandOriginType::DedicatedServer) {
+                                output.error("该命令仅限控制台使用");
+                                return;
+                            }
+                            auto targetXuid = GlobalState::getInstance().xuidByName(params.playerName);
+                            if (targetXuid.empty()) {
+                                output.error("未找到玩家: " + params.playerName);
+                                return;
+                            }
+                            auto data = PlayerDataStore::getInstance().get(targetXuid);
+                            std::ostringstream ss;
+                            ss << "=== " << params.playerName << " 教程状态 ===" << "\n";
+                            ss << "状态: " << data.status << "\n";
+                            if (data.currentStep.has_value()) {
+                                ss << "当前步骤: " << data.currentStep.value() << "\n";
+                            }
+                            ss << "已完成步骤: " << data.completedSteps.size() << " 个\n";
+                            if (!data.completedSteps.empty()) {
+                                ss << "步骤列表: ";
+                                bool first = true;
+                                for (const auto& step : data.completedSteps) {
+                                    if (!first) ss << ", ";
+                                    ss << step;
+                                    first = false;
+                                }
+                                ss << "\n";
+                            }
+                            ss << "加入次数: " << data.joinCount;
+                            output.success(ss.str());
+                        });
+                }
+
+                // --- /wn report <玩家名> <步骤key> ---
+                {
+                    struct WnReportParams {
+                        std::string playerName;
+                        std::string stepKey;
+                    };
+                    wnCmd.overload<WnReportParams>()
+                        .text("report")
+                        .required("playerName")
+                        .required("stepKey")
+                        .execute([](CommandOrigin const& origin, CommandOutput& output,
+                                    WnReportParams const& params) {
+                            if (origin.getOriginType() != CommandOriginType::DedicatedServer) {
+                                output.error("该命令仅限控制台使用");
+                                return;
+                            }
+                            auto targetXuid = GlobalState::getInstance().xuidByName(params.playerName);
+                            if (targetXuid.empty()) {
+                                output.error("未找到玩家: " + params.playerName);
+                                return;
+                            }
+                            if (params.stepKey.empty()) {
+                                output.error("步骤key不能为空");
+                                return;
+                            }
+                            // 检查玩家状态
+                            auto data = PlayerDataStore::getInstance().get(targetXuid);
+                            if (data.status != "in_progress") {
+                                output.error("玩家 " + params.playerName + " 的教程未在进行中（当前状态: " + data.status + "）");
+                                return;
+                            }
+                            // 检查步骤是否存在
+                            const auto* step = ConfigManager::getInstance().getStep(params.stepKey);
+                            if (!step) {
+                                output.error("步骤不存在: " + params.stepKey);
+                                return;
+                            }
+                            // 执行上报
+                            auto* level = ll::service::bedrock::getLevel().as_ptr();
+                            if (level) {
+                                if (auto* player = level->getPlayerByXuid(targetXuid)) {
+                                    StepGuide::onStepComplete(*player, params.stepKey);
+                                    output.success("已上报步骤完成: " + params.stepKey);
+                                    return;
+                                }
+                            }
+                            // 玩家离线：仅标记完成
+                            PlayerDataStore::getInstance().completeStep(targetXuid, params.stepKey);
+                            output.success("玩家离线，已标记步骤完成: " + params.stepKey);
+                        });
+                }
+
+                // --- /wn reset <玩家名> ---
+                {
+                    struct WnResetParams {
+                        std::string playerName;
+                    };
+                    wnCmd.overload<WnResetParams>()
+                        .text("reset")
+                        .required("playerName")
+                        .execute([](CommandOrigin const& origin, CommandOutput& output,
+                                    WnResetParams const& params) {
+                            if (origin.getOriginType() != CommandOriginType::DedicatedServer) {
+                                output.error("该命令仅限控制台使用");
+                                return;
+                            }
+                            auto targetXuid = GlobalState::getInstance().xuidByName(params.playerName);
+                            if (targetXuid.empty()) {
+                                output.error("未找到玩家: " + params.playerName);
+                                return;
+                            }
+                            // 停止 HUD 并重置
+                            HudManager::getInstance().stop(targetXuid);
+                            PlayerDataStore::getInstance().resetPlayer(targetXuid);
+                            output.success("已重置玩家 " + params.playerName + " 的教程进度");
+
+                            // 如果玩家在线，更新 tag 并弹出欢迎表单
+                            Scheduler::after(20, [targetXuid]() {
+                                auto* level = ll::service::bedrock::getLevel().as_ptr();
+                                if (!level) return;
+                                auto* player = level->getPlayerByXuid(targetXuid);
+                                if (player) {
+                                    StepGuide::updateNoobTag(*player);
+                                    Forms::showWelcomeForm(*player);
+                                }
+                            });
                         });
                 }
             }

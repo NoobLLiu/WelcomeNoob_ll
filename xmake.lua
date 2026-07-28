@@ -20,7 +20,7 @@ target("WelcomeNoob")
     add_rules("@levibuildscript/linkrule")
     add_rules("@levibuildscript/modpacker")
     if is_plat("windows") then
-        add_defines("NOMINMAX", "UNICODE", "WELCOMENOOB_EXPORT")
+        add_defines("NOMINMAX", "UNICODE")
         set_exceptions("none") -- To avoid conflicts with /EHa.
         add_cxflags( "/EHa", "/utf-8", "/W4", "/w44265", "/w44289", "/w44296", "/w45263", "/w44738", "/w45204")
         add_cxflags(
@@ -47,19 +47,12 @@ target("WelcomeNoob")
     add_includedirs("src")
     -- 打包时把 config.json 复制到 bin/<ModName>/，让 CI 产物包含默认配置
     after_build(function(target)
-        import("core.project.config")
         local modName = target:name()
         local bindir = path.join(os.projectdir(), "bin", modName)
         local srcConfig = path.join(os.projectdir(), "config.json")
         if os.isfile(srcConfig) then
             os.cp(srcConfig, path.join(bindir, "config.json"))
             cprint("${bright green}[WelcomeNoob]: ${reset}config.json copied to " .. bindir)
-        end
-        -- 复制 import library (.lib) 到 bin/ 目录，供桥接插件链接
-        local libfile = path.join(config.buildir(), "windows", "x64", config.mode(), modName .. ".lib")
-        if os.isfile(libfile) then
-            os.cp(libfile, path.join(bindir, modName .. ".lib"))
-            cprint("${bright green}[WelcomeNoob]: ${reset}" .. modName .. ".lib copied to " .. bindir)
         end
     end)
     if is_config("target_type", "server") then
